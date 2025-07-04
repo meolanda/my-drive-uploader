@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>อัปโหลดไฟล์สู่ Shared Drive</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 2em; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #444; }
+        label { display: block; margin-top: 1.5em; margin-bottom: 0.5em; font-weight: bold; }
+        select, input[type="file"], input[type="text"], input[type="date"] { width: 100%; padding: 0.8em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input[type="submit"] { width: 100%; padding: 1em; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; margin-top: 2em; }
+        input[type="submit"]:hover { background-color: #0056b3; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>อัปโหลดไฟล์สู่ Shared Drive</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            
+            <label for="uploader_name">ชื่อผู้อัปโหลด:</label>
+            <input type="text" id="uploader_name" name="uploader_name" required>
+
+            <label for="submission_date">วันที่ส่งงาน:</label>
+            <input type="date" id="submission_date" name="submission_date" required>
+
+            <label for="project_name">ชื่องาน / ชื่อลูกค้า:</label>
+            <input type="text" id="project_name" name="project_name" required>
+
+            <label for="main_category">1. เลือกหมวดหลัก:</label>
+            <select id="main_category" name="main_category" onchange="updateDropdowns()" required>
+                <option value="">-- กรุณาเลือก --</option>
+                <option value="ระบบน้ำดี">ระบบน้ำดี</option>
+                <option value="ระบบน้ำเสีย">ระบบน้ำเสีย</option>
+                <option value="ระบบไฟ">ระบบไฟ</option>
+                <option value="รูปเข้าออกงาน">รูปเข้าออกงาน</option>
+                <option value="แอร์">แอร์</option>
+                <option value="Hood">Hood</option>
+                <option value="ตู้แช่">ตู้แช่</option>
+                <option value="ใบส่งมอบ">ใบส่งมอบ</option>
+                <option value="ฝ้า">ฝ้า</option>
+            </select>
+
+            <div id="sub_category_1_div" class="hidden">
+                <label for="sub_category_1">2. เลือกหมวดย่อย:</label>
+                <select id="sub_category_1" name="sub_category_1"></select>
+            </div>
+
+            <div id="sub_category_1_text_div" class="hidden">
+                <label for="sub_category_1_text">2. พิมพ์ชื่อ/หมายเลขเครื่อง:</label>
+                <input type="text" id="sub_category_1_text" name="sub_category_1_text">
+            </div>
+
+            <div id="sub_category_2_div" class="hidden">
+                <label for="sub_category_2">3. เลือกรายละเอียด:</label>
+                <select id="sub_category_2" name="sub_category_2"></select>
+            </div>
+            
+            <label for="file">เลือกไฟล์ที่จะอัปโหลด:</label>
+            <input type="file" id="file" name="file" required multiple>
+            
+            <input type="submit" value="อัปโหลดไฟล์">
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('submission_date').valueAsDate = new Date();
+        const subCategoryData = {
+            "ระบบน้ำดี": ["ก่อนทำ", "หลังทำ"], "ระบบน้ำเสีย": ["ก่อนทำ", "หลังทำ"],
+            "ระบบไฟ": ["ก่อนทำ", "หลังทำ"], "รูปเข้าออกงาน": ["ก่อนทำ", "หลังทำ"],
+            "แอร์": { "default": ["เนมเพลส", "อุณหภูมิก่อนทำ", "อุณหภูมิหลังทำ", "แรงลมก่อนทำ", "แรงลมหลังทำ", "รูปแอร์ก่อนทำ", "รูปแอร์หลังทำ", "สายพาน", "มอเตอร์"] },
+            "Hood": ["ก่อนทำ", "หลังทำ", "สายพาน", "มอเตอร์", "ปลายปล่องHood"],
+            "ตู้แช่": { "default": ["ก่อนทำ", "หลังทำ", "อุณภูมิก่อนทำ", "อุณหภูมิหลังทำ"] },
+            "ฝ้า": ["ก่อนทำ", "หลังทำ"]
+        };
+        const mainCategorySelect = document.getElementById('main_category');
+        const subCat1Div = document.getElementById('sub_category_1_div');
+        const subCat1TextDiv = document.getElementById('sub_category_1_text_div');
+        const subCat2Div = document.getElementById('sub_category_2_div');
+        const subCat1Select = document.getElementById('sub_category_1');
+        const subCat1TextInput = document.getElementById('sub_category_1_text');
+        const subCat2Select = document.getElementById('sub_category_2');
+        mainCategorySelect.onchange = function() {
+            const mainValue = this.value;
+            subCat1Div.classList.add('hidden');
+            subCat1TextDiv.classList.add('hidden');
+            subCat2Div.classList.add('hidden');
+            subCat1Select.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
+            subCat1TextInput.value = '';
+            subCat2Select.innerHTML = '<option value="">-- กรุณาเลือก --</option>';
+            subCat1Select.required = false;
+            subCat1TextInput.required = false;
+            subCat2Select.required = false;
+            if (mainValue && subCategoryData[mainValue]) {
+                const subData = subCategoryData[mainValue];
+                if (Array.isArray(subData)) {
+                    subCat1Div.classList.remove('hidden');
+                    subCat1Select.required = true;
+                    subData.forEach(item => { subCat1Select.add(new Option(item, item)); });
+                } else {
+                    subCat1TextDiv.classList.remove('hidden');
+                    subCat1TextInput.required = true;
+                    subCat2Div.classList.remove('hidden');
+                    subCat2Select.required = true;
+                    subData["default"].forEach(item => { subCat2Select.add(new Option(item, item)); });
+                }
+            }
+        };
+    </script>
+</body>
+</html>
